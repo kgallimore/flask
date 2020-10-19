@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="/static/css/mechanical.css">
+    <script src="/static/js/socket.io.js"></script>
+    <script src="/static/js/mechanical.js"></script>
+    <title>Mechanical View</title>
+</head>
+<style>
+#text{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 50px;
+  color: white;
+  transform: translate(-50%,-50%);
+  -ms-transform: translate(-50%,-50%);
+}
+</style>
+<body>
+<div id="overlay" onclick="off()">
+  <div id="text">Ice Found</div>
+</div>
+<div style="text-align: center; width: 100%">
+    <ul class="button-group">
+<li><button class="large red button" onclick="hidePositions()">Hide Position</button></li>
+<li><button class="large red button" onclick="hideStatus()">Hide Status</button></li>
+    </ul>
+    </div>
+<div style="text-align: center">
+<h2 id="current-operating-mode">Homing</h2>
+<h2 id="time-remaining">Time remaining: 15:30</h2></div>
+<table style="width: 100%">
+    <tr>
+        <th class="positions-data" style="width: 20%">Z position of drill bit/extractor</th>
+        <th class="positions-data" style="width: 500px">X-Y Position of Drill/Extractor</th>
+        <th style="width: 5%"></th>
+        <th class="core-data" style="width: 20%">Core Estimates</th>
+        <th style="width: min-content">Status</th>
+    </tr>
+
+    <tr>
+
+        <td style="margin: 0; height: fit-content; width: fit-content" class="positions-data" >
+            <label for="drill-slider"></label><input type="range" class="slider-vertical" id="drill-slider" value="100">
+            <div style="position: relative; margin-left: 35%; right: 5px; font-size: xx-large"><span id="Z-position Text">0</span>&nbsp;M</div>
+            <div style="position: relative; bottom: -120px; text-align: center">1 meter</div>
+        </td>
+<!--        <td class="positions-data" ><input type="range" class="slider-vertical" id="heater-slider" value="100">0 meters</td>-->
+        <td><canvas id="drill-position" width="500" height="300" style="border:2px solid #d3d3d3;">
+            Your browser does not support the canvas element.
+        </canvas></td>
+        <td></td>
+        <td class="core-data">
+            <div style="width: fit-content; height: fit-content; background-color: gray; position: relative;"
+        onmouseover="document.getElementById('core-Data-Div').style.display = 'block';" onmouseout="document.getElementById('core-Data-Div').style.display = 'none';">
+                <div style="font-weight: bold; font-size: x-large">Mouseover to view Core</div>
+               <div id="core-Data-Div" style="display: none;">
+                   <table style="width: 100%;" border="2px">
+                            <th>Hardness Level</th>
+                            <th>Digital Core</th>
+                            <tr>
+                                <td>Unknown</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Unknown</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Unknown</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Unknown</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                            <tr>
+                                <td>Unknown</td>
+                                <td>&nbsp;</td>
+                            </tr>
+                   </table>
+                   <img src="../static/images/fft_1kHz_signal.png" style="width: 100%">
+               </div>
+            </div>
+
+        </td>
+        <th style="vertical-align: 0">
+            <div class="dropdown">
+  <button onclick="myFunction()" class="dropbtn">Hole 1</button>
+  <div id="myDropdown" class="dropdown-content">
+    <a href="#">Hole 1</a>
+    <a href="#">Hole 2</a>
+    <a href="#">Hole 3</a>
+  </div>
+</div>
+
+
+            <p></p> <div class="dropdown"><button onclick="operationDropdown()" class="dropbtn">Homing</button>
+  <div id="operationDropdown" class="dropdown-content">
+    <a href="#">Homing</a>
+    <a href="#">Drilling</a>
+    <a href="#">Heating</a>
+      <a href="#">Extracting</a>
+  </div>
+</div>
+    </tr>
+
+    <tr>
+
+    </tr>
+</table>
+<p></p>
+<table style="width: 100%; text-align: center; font-weight: bold;">
+    <tr>
+<!--        <td id="draw-table" style="width: 33%">
+            Current Draw
+            <table title="Current Draw" border="1" style="width: 90%; margin: auto">
+                <tr>
+                    <td style="width: 50%">Stepper 1</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Stepper 2</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Stepper 3</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Stepper 4</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Stepper 5</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Pump</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Extractor</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Drill</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Other/Elec.</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Total</td>
+                    <td></td>
+                </tr>
+            </table>
+        </td>-->
+        <td style="width: 33%">
+            <table border="1" style="width: 90%; margin: auto">
+                <tr>
+                    <td>Load Cell</td>
+                    <td><span id="Load Cell">0</span> N</td>
+                </tr>
+                <tr>
+                    <td>Z Position</td>
+                    <td><span id="Z Position">0</span> m</td>
+                </tr>
+                <tr>
+                    <td>Heater</td>
+                    <td><span id="Heater">0</span> °C</td>
+                </tr>
+                <tr>
+                    <td>Drill Rpm</td>
+                    <td><span id="Drill Rpm">0</span> RPM</td>
+                </tr>
+                <tr>
+                    <td>Overall System Draw</td>
+                    <td><span id="System Draw">0</span> W</td>
+                </tr>
+            </table>
+            <p></p>Pump
+            <table border="1" style="width: 90%; margin: auto">
+                <tr>
+                    <td>Flow</td>
+                    <td><span id="Flow">0</span> N</td>
+                </tr>
+                <tr>
+                    <td>Pressure</td>
+                    <td><span id="Pressure">0</span> Pa</td>
+                </tr>
+                <tr>
+                    <td>Est. Water Collected</td>
+                    <td><span id="Water Collected">0</span> L</td>
+                </tr>
+            </table>
+        </td>
+        <td id="status-table" style="width: 33%; text-align:center;">
+            Status
+            <table style="border: 2px black solid; width: 80%; margin: auto">
+                <tr>
+                    <td id="Extractor">Extractor</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td id="Pump" style="background-color: red">Pump</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+                <tr>
+                    <td id="Drill">Drill</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Hammer</td>
+                    <td><img style="width: 15px" src="static/images/redcircle.png" alt="Hammer Status"></td>
+                </tr>
+                <tr>
+                    <td id="Stepper 1">Stepper 1</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+                <tr>
+                    <td id="Stepper 2">Stepper 2</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+                <tr>
+                    <td id="Stepper 3">Stepper 3</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+                <tr>
+                    <td id="Stepper 4">Stepper 4</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+                <tr>
+                    <td id="Stepper 5">Stepper 5</td>
+<!--                    <td><img style="width: 15px" src="static/images/greencircle.png"></td>-->
+                    <td>Direction</td>
+                    <td>+</td>
+                </tr>
+            </table>
+    </tr>
+</table>
+<input id="keyDemo" type="text" onkeypress="detectKeys(event)">
+<p id="demo2"></p>
+<button onclick="on()">Test overlay</button>
+<img src="static/images/redx.png" id="red-x" onload="drawImage()" style="display: none; width: 30px">
+<script>
+/* When the user clicks on the button,
+toggle between hiding and showing the dropdown content */
+function myFunction() {
+  document.getElementById("myDropdown").classList.toggle("show");
+}
+function operationDropdown() {
+  document.getElementById("operationDropdown").classList.toggle("show");
+}
+// Close the dropdown if the user clicks outside of it
+window.onclick = function(event) {
+  if (!event.target.matches('.dropbtn')) {
+    var dropdowns = document.getElementsByClassName("dropdown-content");
+    var i;
+    for (i = 0; i < dropdowns.length; i++) {
+      var openDropdown = dropdowns[i];
+      if (openDropdown.classList.contains('show')) {
+        openDropdown.classList.remove('show');
+      }
+    }
+  }
+}
+function detectKeys(event) {
+    var key = event.keyCode;
+    var actual = String.fromCharCode(key)
+    document.getElementById("demo2").innerHTML = "Key pressed: " + actual;
+    document.getElementById("keyDemo").value = "";
+
+}
+function hidePositions() {
+    var dataElements = document.getElementsByClassName("positions-data");
+        for (i = 0; i < dataElements.length; i++) {
+      var x = dataElements[i];
+                if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+    }
+
+}
+function hideDraw() {
+    var x = document.getElementById("draw-table");
+          if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+
+}
+function hideStatus() {
+    var x = document.getElementById("status-table");
+      if (x.style.display === "none") {
+    x.style.display = "block";
+  } else {
+    x.style.display = "none";
+  }
+
+}
+
+function on() {
+  document.getElementById("overlay").style.display = "block";
+}
+
+function off() {
+  document.getElementById("overlay").style.display = "none";
+}
+</script>
+
+</body>
+</html>

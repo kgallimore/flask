@@ -1,0 +1,9 @@
+.idea
+venv
+__pycache__
+bootstrap*
+jquery*
+canvasjs*
+storage
+.vs
+node_modules

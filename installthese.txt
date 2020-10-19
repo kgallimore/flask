@@ -1,0 +1,58 @@
+I2C:
+sudo raspi-config
+5
+P5 Enable
+
+
+Opencv for raspbian 9:
+sudo apt install libpango-1.0-0 libatk1.0-0 libcairo-gobject2 libpangocairo-1.0-0 libqt4-test libtiff5 libqtcore4 libwebp6 libavcodec58 libavutil56 libqtgui4 libavformat58 libgdk-pixbuf2.0-0 libgtk-3-0 libilmbase23 libjasper1 libcairo2 libswscale5 libopenexr23
+
+Opencv for raspbian 10:
+Must clone source and compile code
+
+pyaudio for raspbian 10:
+sudo git clone http://people.csail.mit.edu/hubert/git/pyaudio.git
+sudo apt-get install libportaudio0 libportaudio2 libportaudiocpp0 portaudio19-dev
+sudo apt-get install python-dev
+cd pyaudio3
+sudo python setup.py install
+IF WARNINGS:
+sudo nano /usr/share/alsa/alsa.conf
+Change these to 1(or whichever tha audio device number is using audio.py "get_device_list" or built in "arecord --list-devices":
+defaults.ctl.card 0
+defaults.pcm.card 0
+
+
+Setting Up Access Point
+sudo apt-get install hostapd
+sudo apt-get install dnsmasq
+sudo systemctl stop hostapd
+sudo systemctl stop dnsmasq
+
+sudo nano /etc/dhcpcd.conf
+
+interface wlan0
+static ip_address=192.168.0.10/24
+denyinterfaces eth0
+denyinterfaces wlan0
+
+sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
+sudo nano /etc/dnsmasq.conf
+
+interface=wlan0
+  dhcp-range=192.168.0.11,192.168.0.30,255.255.255.0,24h
+
+interface=wlan0
+bridge=br0
+hw_mode=g
+channel=7
+wmm_enabled=0
+macaddr_acl=0
+auth_algs=1
+ignore_broadcast_ssid=0
+wpa=2
+wpa_key_mgmt=WPA-PSK
+wpa_pairwise=TKIP
+rsn_pairwise=CCMP
+ssid=NETWORK
+wpa_passphrase=PASSWORD

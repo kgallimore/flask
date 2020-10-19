@@ -1,0 +1,404 @@
+﻿<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="/static/js/jquery-3.4.1.slim.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/canvasjs.min.js"></script>
+    <!--<script src="/static/css/rangesliders.css"></script>-->
+    <script src="/static/js/socket.io.js"></script>
+    <script>
+
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        var connected = false;
+        var dataPoints0 = [];
+        var dataPoints1 = [];
+        var dataPoints2 = [];
+        var updateInterval = 1000;
+        var time = new Date;
+        var chart0, chart1, chart2;
+        var rangeValues = 0;
+        
+
+        window.onload = function () {
+            chart0 = new CanvasJS.Chart("chartContainer0", {
+                zoomEnabled: true,
+                title: {
+                    text: "Sensor 0 Readings"
+                },
+                axisX: {
+                    title: "time"
+                },
+                axisY: {
+                    includeZero: false
+                },
+                toolTip: {
+                    shared: true
+                },
+                legend: {
+                    cursor: "pointer",
+                    verticalAlign: "top",
+                    fontSize: 22,
+                    fontColor: "dimGrey",
+                    itemclick: toggleDataSeries
+                },
+                data: [{
+                    type: "line",
+                    xValueType: "dateTime",
+                    xValueFormatString: "hh:mm:ss TT",
+                    showInLegend: true,
+                    name: "Sensor 0",
+                    dataPoints: dataPoints0
+                }]
+            });
+            chart1 = new CanvasJS.Chart("chartContainer1", {
+                zoomEnabled: true,
+                title: {
+                    text: "Sensor 1 Readings"
+                },
+                axisX: {
+                    title: "time"
+                },
+                axisY: {
+                    includeZero: false
+                },
+                toolTip: {
+                    shared: true
+                },
+                legend: {
+                    cursor: "pointer",
+                    verticalAlign: "top",
+                    fontSize: 22,
+                    fontColor: "dimGrey",
+                    itemclick: toggleDataSeries
+                },
+                data: [
+                    {
+                        type: "line",
+                        xValueType: "dateTime",
+                        showInLegend: true,
+                        name: "Sensor 1",
+                        dataPoints: dataPoints1
+                    }]
+            });
+            chart2 = new CanvasJS.Chart("chartContainer2", {
+                zoomEnabled: true,
+                title: {
+                    text: "Sensor 2 Readings"
+                },
+                axisX: {
+                    title: "time"
+                },
+                axisY: {
+                    includeZero: false
+                },
+                toolTip: {
+                    shared: true
+                },
+                legend: {
+                    cursor: "pointer",
+                    verticalAlign: "top",
+                    fontSize: 22,
+                    fontColor: "dimGrey",
+                    itemclick: toggleDataSeries
+                },
+                data: [{
+                        type: "line",
+                        xValueType: "dateTime",
+                        showInLegend: true,
+                        name: "Sensor 2",
+                        dataPoints: dataPoints2
+                    }]
+            });
+            socket.on('randint', function (data) {
+                if (connected === true) {
+                    time.setTime(time.getTime() + updateInterval);
+                    for (var i = 0; i < 3; i++) {
+                        if (data[i] > 200) {
+                            document.getElementById("warning" + i).style.display = "block";
+                        } else {
+                            document.getElementById("warning" + i).style.display = "none";
+                        }
+
+                    }
+
+                    // pushing the new values
+                    dataPoints0.push({
+                        x: time.getTime(),
+                        y: data[0]
+                    });
+                    dataPoints1.push({
+                        x: time.getTime(),
+                        y: data[1]
+                    });
+                    dataPoints2.push({
+                        x: time.getTime(),
+                        y: data[2]
+                    });
+
+                    // updating legend text with  updated with y Value
+                    chart0.options.data[0].legendText = " Sensor 0  " + data[0];
+                    chart1.options.data[0].legendText = " Sensor 1  " + data[1];
+                    chart2.options.data[0].legendText = " Sensor 2  " + data[2];
+
+                    chart0.render();
+                    chart1.render();
+                    chart2.render();
+                } else {
+                    send_connect()
+                }
+            });
+
+            function toggleDataSeries(e) {
+                e.dataSeries.visible = !(typeof (e.dataSeries.visible) === "undefined" || e.dataSeries.visible);
+                chart.render();
+            }
+
+            document.getElementById("sensorOutputSlider0").value = rangeValues;
+            document.getElementById("slidervalue0").innerHTML = rangeValues;
+            document.getElementById("sensorOutputSlider1").value = rangeValues;
+            document.getElementById("slidervalue1").innerHTML = rangeValues;
+            setInterval(function () {
+                update()
+            }, updateInterval);
+
+            setTimeout(function () {
+                send_connect();
+            }, 500);
+        };
+
+        function send_connect() {
+            console.log("Sending connected message");
+            socket.emit('connect', "charts");
+        }
+
+        function update() {
+            socket.emit('update');
+        }
+
+        function restart() {
+            socket.emit('restart')
+        }
+
+        function powerOff() {
+            socket.emit('powerOff')
+        }
+
+        function getTime() {
+            socket.emit('getTime', Date.now());
+        }
+
+
+        socket.on('firstConnect', function (connection_data) {
+            let data;
+            if (connected === false) {
+                rangeValues = connection_data['current_output'];
+                data = connection_data['sensor_readings'];
+                const arraylength = data[0].length;
+                console.log("Connected, adding " + arraylength + ' datapoints');
+                let currentTime;
+                for (let i = 0; i < arraylength; i++) {
+                    currentTime = time.getTime() - 300 * (arraylength - i - 1);
+                    if (time > 0) {
+                        dataPoints0.push({
+                            x: currentTime,
+                            y: data[0][i]
+                        });
+                        dataPoints1.push({
+                            x: currentTime,
+                            y: data[1][i]
+                        });
+                        dataPoints2.push({
+                            x: currentTime,
+                            y: data[2][i]
+                        });
+                    }
+                }
+                connected = true
+            }
+
+        });
+
+        socket.on('rangeUpdate0', function (data) {
+            document.getElementById("sensorOutputSlider0").value = data;
+            document.getElementById("slidervalue0").innerHTML = data;
+        });
+
+        socket.on('rangeUpdate1', function (data) {
+            document.getElementById("sensorOutputSlider1").value = data;
+            document.getElementById("slidervalue1").innerHTML = data;
+        });
+
+        //  This is to test latency of the network
+        socket.on('timestamp', function (data) {
+            time = Date.now();
+            var div = document.getElementById('timings');
+            text = time - data;
+            div.innerHTML += text + "<br>";
+
+        });
+
+    </script>
+    <style>
+        .slidecontainer {
+            width: 100%;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 25px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+    </style>
+    <title></title>
+</head>
+<body>
+    <div style="align-content: center">
+        <button onclick="restart()">Update from github</button>
+        <button onclick="powerOff()">Prepare Graceful Shutdown</button>
+    </div>
+    <div style="height: 51px">
+        <table align="center" style="text-align:center; font-size: large">
+            <tr>
+                <th><span id="warning0" style="color: red; display: none">Sensor One Warning! <br> &#9888;</span></th>
+                <th><span id="warning1" style="color: red; display: none">Sensor Two Warning! <br> &#9888;</span></th>
+                <th><span id="warning2" style="color: red; display: none">Sensor Three Warning! <br> &#9888;</span></th>
+            </tr>
+        </table>
+    </div>
+
+
+    <div style="height: 370px; display: flex; align-items:center; justify-content: center">
+        <div id="chartContainer0" style="height: 370px; width:33%; max-width: 920px; margin: 0px auto; display: inline-block"></div>
+        <div id="chartContainer1" style="height: 370px; width:33%; max-width: 920px; margin: 0px auto; display: inline-block"></div>
+        <div id="chartContainer2" style="height: 370px; width:33%; max-width: 920px; margin: 0px auto; display: inline-block"></div>
+    </div>
+    <div style="height: 370px; display: flex; align-items:center; justify-content: center">
+        <div id="cameraFootage" style="height: 370px; width:50%; margin: 50px auto; display: inline-block">
+            <!--<video autoplay="autoplay" loop="loop" style="width: 100%; height: auto">
+                <source src="/static/illya.webm">
+            </video>-->
+            <img id="imgid2" alt="Live camera feed" src="/feed/2">
+        </div>
+        <div id="controllers" style="height: 370px; width:50%; margin: 50px auto; display: inline-block">
+            <table style="width: 100%">
+                <tr>
+                    <td style="width: 50%; padding: 10px">
+                        <input type="range" min="0" max="250" value="150" class="slider" id="sensorOutputSlider0">
+                    </td>
+                    <td style="width: 50%">
+                        Analog output 1 Value: <span id="slidervalue0"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="width: 50%; padding: 10px">
+                        <input type="range" min="0" max="250" value="150" class="slider" id="sensorOutputSlider1">
+                    </td>
+                    <td style="width: 50%">
+                        Analog output 2 Value: <span id="slidervalue1"></span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <input id='motorInterval' type="number" value="0" min="-255" max="255">
+                        <button type="button" onclick="submit_motor()">Update</button>
+                    </td>
+                </tr>
+            </table>
+
+
+
+            
+        </div>
+    </div>
+
+</body>
+<div style="text-align: center; padding: 25px">
+    <a href="/csv">Download current session sensor data</a>
+</div>
+<div class="slidecontainer" style="align-content: center; padding: 25px">
+
+   <!-- <button onclick="getTime()">Get Latency</button>
+    <div id="timings">
+
+    </div>-->
+</div>
+<div id="emergencyStopModal" class="modal">
+
+  <!-- Modal content -->
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>EMERGENCY STOP</h2>
+      <p id="stopReason">All motors stopped</p>
+  </div>
+
+</div>
+<script>
+    function submit_motor() {
+        socket.emit('adjustMotorValue', document.getElementById("motorInterval").value);
+    }
+    function switch_motor_direction() {
+        socket.emit('swtichMotorDirection', document.getElementById("motorInterval").value);
+    }
+
+    var outputSlider0 = document.getElementById("sensorOutputSlider0");
+    var outputValue0 = document.getElementById("slidervalue0");
+
+    var outputSlider1 = document.getElementById("sensorOutputSlider1");
+    var outputValue1 = document.getElementById("slidervalue1");
+
+    outputValue0.innerHTML = outputSlider0.value;
+    outputValue1.innerHTML = outputSlider1.value;
+    outputSlider0.oninput = function () {
+        console.log("Slider 0 moving");
+        outputValue0.innerHTML = this.value;
+        socket.emit('adjustValue0', this.value);
+    };
+    outputSlider1.oninput = function () {
+        console.log("Slider 1 moving");
+        outputValue1.innerHTML = this.value;
+        socket.emit('adjustValue1', this.value);
+    };
+
+    document.getElementById("motorInterval").addEventListener("keyup", function(event){
+        if (event.key === "Enter"){
+            socket.emit('adjustMotorValue', document.getElementById("motorInterval").value);
+        }
+    })
+
+    //var updateTimingSlider = document.getElementById("update-speed-slider");
+    //var updateTimingValue = document.getElementById("slidervalue");
+    //updateTimingValue.innerHTML = updateTimingSlider.value;
+
+    //updateTimingSlider.oninput = function () {
+        //updateTimingValue.innerHTML = this.value;
+        //socket.emit('adjustValue', this.value);
+    //};
+</script>
+<script src="/static/js/stopModal.js"></script>
+</html>
